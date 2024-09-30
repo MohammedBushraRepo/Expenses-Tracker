@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:expense_tracker/models/expense.dart';
 
 class NewExpense extends StatefulWidget {
-  const NewExpense({super.key});
+  const NewExpense({super.key, required this.onAddExpense});
+
+  //Add new expense recieve method from parent
+  final void Function(Expense expense) onAddExpense;
+
   @override
   State<NewExpense> createState() {
     return _NewExpenseState();
@@ -15,7 +19,8 @@ class _NewExpenseState extends State<NewExpense> {
   // void _saveTitleInput(String inputValue) {
   //   _enteredTitle = inputValue;
   // }
-  final _titleController = TextEditingController(); //initiate controller to the text field
+  final _titleController =
+      TextEditingController(); //initiate controller to the text field
   final _amountController = TextEditingController();
   DateTime? _selectedDate;
   Category _selectedCategory = Category.leisure;
@@ -40,7 +45,42 @@ class _NewExpenseState extends State<NewExpense> {
 
   //handle submitting Data
   void _submittingData() {
-    
+    //validate the amount
+    final enteredAmount = double.tryParse(_amountController
+        .text); //tryParse('hello') = null ,, tryParse('12.5') = 12.5
+    final amountIsValid = enteredAmount == null || enteredAmount <= 0;
+
+    if (_titleController.text.trim().isEmpty ||
+        amountIsValid ||
+        _selectedDate == null) {
+      //show error message
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Invalid Input"),
+          content: const Text("Please enter valid title amount and date "),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx); //to exits the alert dialog
+              },
+              child: const Text("Okay "),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    //add the data the Navgation Method
+    widget.onAddExpense(
+      Expense(
+        title: _titleController.text,
+        amount: enteredAmount,
+        date: _selectedDate!, // ! is to tell dart that will not be null
+        category: _selectedCategory,
+      ),
+    );
   }
 
   @override
@@ -102,10 +142,12 @@ class _NewExpenseState extends State<NewExpense> {
               ),
             ],
           ),
-          const SizedBox(height: 16,),
+          const SizedBox(
+            height: 16,
+          ),
           Row(
             children: [
-                //dropdown button 
+              //dropdown button
               DropdownButton(
                   value: _selectedCategory,
                   items: Category.values
@@ -119,16 +161,16 @@ class _NewExpenseState extends State<NewExpense> {
                       )
                       .toList(),
                   onChanged: (value) {
-                    if(value == null){
-                      return; //if user select No thing return 
+                    if (value == null) {
+                      return; //if user select No thing return
                     }
                     setState(() {
                       _selectedCategory = value;
                     });
                   }),
 
-                  const Spacer(),
-                    //*** cancelation Button 
+              const Spacer(),
+              //*** cancelation Button
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -136,12 +178,9 @@ class _NewExpenseState extends State<NewExpense> {
                 child: const Text('Cancel'),
               ),
 
-                    // ** Save Expense Button
+              // ** Save Expense Button
               ElevatedButton(
-                onPressed: () {
-                  print(_titleController.text);
-                  print(_amountController.text);
-                },
+                onPressed: _submittingData,
                 child: const Text('Save Expense'),
               )
             ],
